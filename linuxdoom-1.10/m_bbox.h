@@ -23,19 +23,17 @@
 #ifndef __M_BBOX__
 #define __M_BBOX__
 
-#include <values.h>
+#include "doomtype.h"
 
 #include "m_fixed.h"
 
-
 // Bounding box coordinate storage.
-enum
-{
+enum {
     BOXTOP,
     BOXBOTTOM,
     BOXLEFT,
     BOXRIGHT
-};	// bbox coordinates
+};  // bbox coordinates
 
 // Bounding box functions.
 void M_ClearBox (fixed_t*	box);

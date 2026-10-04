@@ -150,7 +150,7 @@ int 		eventtail;
 void D_PostEvent (event_t* ev)
 {
     events[eventhead] = *ev;
-    eventhead = (++eventhead)&(MAXEVENTS-1);
+    eventhead = (eventhead+1)&(MAXEVENTS-1);
 }
 
 
@@ -167,7 +167,7 @@ void D_ProcessEvents (void)
 	 && (W_CheckNumForName("map01")<0) )
       return;
 	
-    for ( ; eventtail != eventhead ; eventtail = (++eventtail)&(MAXEVENTS-1) )
+    for ( ; eventtail != eventhead ; eventtail = (eventtail+1)&(MAXEVENTS-1) )
     {
 	ev = &events[eventtail];
 	if (M_Responder (ev))
@@ -560,6 +560,17 @@ void D_AddFile (char *file)
 // to determine whether registered/commercial features
 // should be executed (notably loading PWAD's).
 //
+#ifdef NORMALUNIX
+// The original hand-counted buffer sizes were one short for doomu.wad.
+static char* WadPath (char* dir, char* name)
+{
+    char*	path = malloc (strlen(dir) + 1 + strlen(name) + 1);
+
+    sprintf (path, "%s/%s", dir, name);
+    return path;
+}
+#endif
+
 void IdentifyVersion (void)
 {
 
@@ -579,39 +590,18 @@ void IdentifyVersion (void)
     if (!doomwaddir)
 	doomwaddir = ".";
 
-    // Commercial.
-    doom2wad = malloc(strlen(doomwaddir)+1+9+1);
-    sprintf(doom2wad, "%s/doom2.wad", doomwaddir);
-
-    // Retail.
-    doomuwad = malloc(strlen(doomwaddir)+1+8+1);
-    sprintf(doomuwad, "%s/doomu.wad", doomwaddir);
-    
-    // Registered.
-    doomwad = malloc(strlen(doomwaddir)+1+8+1);
-    sprintf(doomwad, "%s/doom.wad", doomwaddir);
-    
-    // Shareware.
-    doom1wad = malloc(strlen(doomwaddir)+1+9+1);
-    sprintf(doom1wad, "%s/doom1.wad", doomwaddir);
-
-     // Bug, dear Shawn.
-    // Insufficient malloc, caused spurious realloc errors.
-    plutoniawad = malloc(strlen(doomwaddir)+1+/*9*/12+1);
-    sprintf(plutoniawad, "%s/plutonia.wad", doomwaddir);
-
-    tntwad = malloc(strlen(doomwaddir)+1+9+1);
-    sprintf(tntwad, "%s/tnt.wad", doomwaddir);
-
-
-    // French stuff.
-    doom2fwad = malloc(strlen(doomwaddir)+1+10+1);
-    sprintf(doom2fwad, "%s/doom2f.wad", doomwaddir);
+    doom2wad = WadPath (doomwaddir, "doom2.wad");	// Commercial.
+    doomuwad = WadPath (doomwaddir, "doomu.wad");	// Retail.
+    doomwad = WadPath (doomwaddir, "doom.wad");		// Registered.
+    doom1wad = WadPath (doomwaddir, "doom1.wad");	// Shareware.
+    plutoniawad = WadPath (doomwaddir, "plutonia.wad");
+    tntwad = WadPath (doomwaddir, "tnt.wad");
+    doom2fwad = WadPath (doomwaddir, "doom2f.wad");	// French stuff.
 
     home = getenv("HOME");
     if (!home)
       I_Error("Please set $HOME to your home directory");
-    sprintf(basedefault, "%s/.doomrc", home);
+    snprintf(basedefault, sizeof(basedefault), "%s/.doomrc", home);
 #endif
 
     if (M_CheckParm ("-shdev"))
@@ -1119,7 +1109,7 @@ void D_DoomMain (void)
 	// for statistics driver
 	extern  void*	statcopy;                            
 
-	statcopy = (void*)atoi(myargv[p+1]);
+	statcopy = (void*)(intptr_t)atoi(myargv[p+1]);
 	printf ("External statistics registered.\n");
     }
     

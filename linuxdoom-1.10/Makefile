@@ -4,11 +4,19 @@
 #
 # $Log:$
 #
-CC=  gcc  # gcc or g++
+CC=  cc
 
-CFLAGS=-g -Wall -DNORMALUNIX -DLINUX # -DUSEASM 
-LDFLAGS=-L/usr/X11R6/lib
-LIBS=-lXext -lX11 -lnsl -lm
+# SDL3 port for 64-bit macOS / Linux. The original X11 driver needed an
+# 8-bit PseudoColor visual that modern X servers no longer provide.
+SDL_CFLAGS := $(shell pkg-config --cflags sdl3)
+SDL_LIBS := $(shell pkg-config --libs sdl3)
+
+CFLAGS = -g -O2 -std=gnu99 -DNORMALUNIX -fno-strict-aliasing \
+	-Wall -Wno-implicit-int -Wno-unused-variable -Wno-unused-const-variable \
+	-Wno-missing-braces -Wno-dangling-else -Wno-parentheses \
+	$(SDL_CFLAGS)
+LDFLAGS =
+LIBS = $(SDL_LIBS) -lm
 
 # subdirectory for objects
 O=linux
@@ -81,14 +89,17 @@ all:	 $(O)/linuxxdoom
 
 clean:
 	rm -f *.o *~ *.flc
-	rm -f linux/*
+	rm -f $(O)/*.o $(O)/linuxxdoom
 
 $(O)/linuxxdoom:	$(OBJS) $(O)/i_main.o
 	$(CC) $(CFLAGS) $(LDFLAGS) $(OBJS) $(O)/i_main.o \
 	-o $(O)/linuxxdoom $(LIBS)
 
-$(O)/%.o:	%.c
+$(O)/%.o:	%.c *.h | $(O)
 	$(CC) $(CFLAGS) -c $< -o $@
+
+$(O):
+	mkdir -p $(O)
 
 #############################################################
 #

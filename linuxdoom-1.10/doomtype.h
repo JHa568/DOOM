@@ -34,6 +34,7 @@ typedef bool boolean;
 typedef enum {false, true} boolean;
 #endif
 typedef unsigned char byte;
+#include <stdint.h>
 #endif
 
 

@@ -24,30 +24,26 @@
 static const char
 rcsid[] = "$Id: g_game.c,v 1.8 1997/02/03 22:45:09 b1 Exp $";
 
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
-#include "doomdef.h" 
-#include "doomstat.h"
-
-#include "z_zone.h"
-#include "f_finale.h"
-#include "m_argv.h"
-#include "m_misc.h"
-#include "m_menu.h"
-#include "m_random.h"
-#include "i_system.h"
-
-#include "p_setup.h"
-#include "p_saveg.h"
-#include "p_tick.h"
-
-#include "d_main.h"
-
-#include "wi_stuff.h"
-#include "hu_stuff.h"
-#include "st_stuff.h"
 #include "am_map.h"
+#include "d_main.h"
+#include "doomdef.h"
+#include "doomstat.h"
+#include "f_finale.h"
+#include "hu_stuff.h"
+#include "i_system.h"
+#include "m_argv.h"
+#include "m_menu.h"
+#include "m_misc.h"
+#include "m_random.h"
+#include "p_saveg.h"
+#include "p_setup.h"
+#include "p_tick.h"
+#include "st_stuff.h"
+#include "wi_stuff.h"
+#include "z_zone.h"
 
 // Needs access to LFB.
 #include "v_video.h"
@@ -71,7 +67,7 @@ rcsid[] = "$Id: g_game.c,v 1.8 1997/02/03 22:45:09 b1 Exp $";
 #include "g_game.h"
 
 
-#define SAVEGAMESIZE	0x2c000
+#define SAVEGAMESIZE	0x80000	// 64-bit thinkers are bigger; no longer borrows screens[1]
 #define SAVESTRINGSIZE	24
 
 
@@ -140,6 +136,7 @@ wbstartstruct_t wminfo;               	// parms for world map / intermission
 short		consistancy[MAXPLAYERS][BACKUPTICS]; 
  
 byte*		savebuffer;
+static byte	savegamebuf[SAVEGAMESIZE];
  
  
 // 
@@ -492,8 +489,8 @@ void G_DoLoadLevel (void)
     joyxmove = joyymove = 0; 
     mousex = mousey = 0; 
     sendpause = sendsave = paused = false; 
-    memset (mousebuttons, 0, sizeof(mousebuttons)); 
-    memset (joybuttons, 0, sizeof(joybuttons)); 
+    memset (mousearray, 0, sizeof(mousearray)); 
+    memset (joyarray, 0, sizeof(joyarray)); 
 } 
  
  
@@ -1281,7 +1278,7 @@ void G_DoSaveGame (void)
 	sprintf (name,SAVEGAMENAME"%d.dsg",savegameslot); 
     description = savedescription; 
 	 
-    save_p = savebuffer = screens[1]+0x4000; 
+    save_p = savebuffer = savegamebuf;
 	 
     memcpy (save_p, description, SAVESTRINGSIZE); 
     save_p += SAVESTRINGSIZE; 
@@ -1586,12 +1583,15 @@ void G_DoPlayDemo (void)
 	 
     gameaction = ga_nothing; 
     demobuffer = demo_p = W_CacheLumpName (defdemoname, PU_STATIC); 
-    if ( *demo_p++ != VERSION)
+    // 1.9 (109) demos, e.g. those in the shareware/retail IWADs,
+    // use identical game logic, so accept them too.
+    if ( *demo_p != VERSION && *demo_p != 109)
     {
       fprintf( stderr, "Demo is from a different game version!\n");
       gameaction = ga_nothing;
       return;
     }
+    demo_p++;
     
     skill = *demo_p++; 
     episode = *demo_p++; 
